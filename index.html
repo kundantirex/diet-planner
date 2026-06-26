@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diet Planner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #222; }
+  header { background: #2d6a4f; color: white; padding: 1.5rem 2rem; }
+  header h1 { font-size: 1.6rem; font-weight: 600; }
+  header p { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+  .container { max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+  .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #e0e0d8; }
+  .card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #2d6a4f; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+  input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+  .goal-btns { display: flex; gap: 10px; margin-top: 4px; }
+  .goal-btn { flex: 1; padding: 10px; border: 1.5px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 13px; font-weight: 500; color: #444; transition: all .15s; }
+  .goal-btn.active { border-color: #2d6a4f; background: #d8f3dc; color: #2d6a4f; }
+  .btn-calc { width: 100%; padding: 12px; background: #2d6a4f; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 1rem; }
+  .btn-calc:hover { background: #1b4332; }
+  .targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .target-box { text-align: center; padding: 1rem; border-radius: 10px; background: #f0faf4; border: 1px solid #b7e4c7; }
+  .target-box .val { font-size: 1.6rem; font-weight: 700; color: #1b4332; }
+  .target-box .lbl { font-size: 12px; color: #555; margin-top: 2px; }
+  .meal-section { margin-bottom: 1.2rem; }
+  .meal-header { display: flex; justify-content: space-between; align-items: center; padding: .6rem .8rem; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 14px; }
+  .meal-body { border: 1px solid #e8e8e0; border-top: none; border-radius: 0 0 8px 8px; padding: .5rem .8rem; }
+  .meal-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0ec; color: #333; }
+  .meal-row:last-child { border-bottom: none; }
+  .meal-row .macro { color: #888; font-size: 12px; }
+  #results { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Indian Diet Planner</h1>
+  <p>Personalized meal plans based on your goal, calories and protein targets</p>
+</header>
+<div class="container">
+  <div class="card">
+    <h2>Client Details</h2>
+    <div class="grid">
+      <div>
+        <label>Age (years)</label>
+        <input type="number" id="age" placeholder="25" min="15" max="80">
+      </div>
+      <div>
+        <label>Gender</label>
+        <select id="gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div>
+        <label>Weight (kg)</label>
+        <input type="number" id="weight" placeholder="70" min="30" max="200">
+      </div>
+      <div>
+        <label>Height (cm)</label>
+        <input type="number" id="height" placeholder="175" min="100" max="250">
+      </div>
+    </div>
+    <div style="margin-top:1rem">
+      <label>Activity Level</label>
+      <select id="activity">
+        <option value="1.2">Sedentary (desk job, no gym)</option>
+        <option value="1.375">Lightly active (gym 1-3x/week)</option>
+        <option value="1.55" selected>Moderately active (gym 4-5x/week)</option>
+        <option value="1.725">Very active (hard training daily)</option>
+      </select>
+    </div>
+    <div style="margin-top:1rem">
+      <label>Goal</label>
+      <div class="goal-btns">
+        <button class="goal-btn active" onclick="setGoal(this,'muscle')">Muscle Gain</button>
+        <button class="goal-btn" onclick="setGoal(this,'loss')">Weight Loss</button>
+        <button class="goal-btn" onclick="setGoal(this,'maintain')">Maintain</button>
+      </div>
+      <input type="hidden" id="goal" value="muscle">
+    </div>
+    <button class="btn-calc" onclick="calculate()">Generate Diet Plan</button>
+  </div>
+
+  <div id="results">
+    <div class="card">
+      <h2>Daily Targets</h2>
+      <div class="targets">
+        <div class="target-box">
+          <div class="val" id="t-cal">--</div>
+          <div class="lbl">kcal / day</div>
+        </div>
+        <div class="target-box">
+          <div class="val" id="t-protein">--</div>
+          <div class="lbl">g protein / day</div>
+        </div>
+        <div class="target-box">
+          <div class="val" id="t-bmr">--</div>
+          <div class="lbl">BMR (kcal)</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Meal Plan</h2>
+      <div id="meal-plan"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedGoal = 'muscle';
+function setGoal(btn, goal) {
+  document.querySelectorAll('.goal-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedGoal = goal;
+}
+
+const PLANS = {
+  muscle: [
+    { name: 'Breakfast', color: '#fff8e1', hdr: '#f9a825', items: [
+      { food: '4 boiled eggs', p: 24, cal: 280 },
+      { food: '2 besan chillas', p: 10, cal: 240 },
+      { food: '1 bowl curd', p: 6, cal: 100 },
+      { food: '1 glass milk', p: 8, cal: 150 }
+    ]},
+    { name: 'Mid-Morning', color: '#fce4ec', hdr: '#e91e63', items: [
+      { food: '1 banana', p: 1, cal: 90 },
+      { food: '20 almonds', p: 5, cal: 140 },
+      { food: '1 scoop whey (optional)', p: 25, cal: 120 }
+    ]},
+    { name: 'Lunch', color: '#e8f5e9', hdr: '#388e3c', items: [
+      { food: '4 rotis (whole wheat)', p: 12, cal: 320 },
+      { food: 'Chicken/Paneer sabji (150g)', p: 30, cal: 250 },
+      { food: '2 bowls dal', p: 14, cal: 300 },
+      { food: 'Salad', p: 2, cal: 40 }
+    ]},
+    { name: 'Evening Snack', color: '#e3f2fd', hdr: '#1565c0', items: [
+      { food: 'Sprouts chaat (1 bowl)', p: 12, cal: 150 },
+      { food: '50g roasted chana', p: 10, cal: 180 },
+      { food: '2 boiled eggs', p: 12, cal: 140 }
+    ]},
+    { name: 'Dinner', color: '#ede7f6', hdr: '#6a1b9a', items: [
+      { food: '150g paneer / chicken', p: 27, cal: 300 },
+      { food: '1 bowl curd', p: 6, cal: 100 },
+      { food: '1 bowl rice', p: 4, cal: 200 },
+      { food: 'Sabji + salad', p: 4, cal: 100 }
+    ]}
+  ],
+  loss: [
+    { name: 'Breakfast', color: '#fff8e1', hdr: '#f9a825', items: [
+      { food: '3 boiled eggs (2 whites)', p: 18, cal: 160 },
+      { food: '1 besan chilla', p: 5, cal: 120 },
+      { food: '1 bowl curd (low fat)', p: 6, cal: 70 }
+    ]},
+    { name: 'Mid-Morning', color: '#fce4ec', hdr: '#e91e63', items: [
+      { food: '1 apple / guava', p: 1, cal: 70 },
+      { food: '10 almonds', p: 3, cal: 70 }
+    ]},
+    { name: 'Lunch', color: '#e8f5e9', hdr: '#388e3c', items: [
+      { food: '2 rotis (whole wheat)', p: 6, cal: 160 },
+      { food: 'Grilled chicken / dal (150g)', p: 28, cal: 180 },
+      { food: '1 bowl dal', p: 7, cal: 150 },
+      { food: 'Large salad', p: 2, cal: 50 }
+    ]},
+    { name: 'Evening Snack', color: '#e3f2fd', hdr: '#1565c0', items: [
+      { food: 'Sprouts chaat (small)', p: 8, cal: 100 },
+      { food: '1 boiled egg', p: 6, cal: 70 }
+    ]},
+    { name: 'Dinner', color: '#ede7f6', hdr: '#6a1b9a', items: [
+      { food: '100g paneer / chicken breast', p: 22, cal: 180 },
+      { food: '1 bowl vegetable soup', p: 3, cal: 60 },
+      { food: 'Salad + sabji', p: 4, cal: 80 }
+    ]}
+  ],
+  maintain: [
+    { name: 'Breakfast', color: '#fff8e1', hdr: '#f9a825', items: [
+      { food: '3 boiled eggs', p: 18, cal: 210 },
+      { food: '2 besan chillas', p: 10, cal: 240 },
+      { food: '1 bowl curd', p: 6, cal: 100 }
+    ]},
+    { name: 'Mid-Morning', color: '#fce4ec', hdr: '#e91e63', items: [
+      { food: '1 fruit', p: 1, cal: 80 },
+      { food: '10 almonds', p: 3, cal: 70 }
+    ]},
+    { name: 'Lunch', color: '#e8f5e9', hdr: '#388e3c', items: [
+      { food: '3 rotis', p: 9, cal: 240 },
+      { food: 'Sabji + dal (1 bowl each)', p: 14, cal: 320 },
+      { food: 'Salad', p: 2, cal: 40 }
+    ]},
+    { name: 'Evening Snack', color: '#e3f2fd', hdr: '#1565c0', items: [
+      { food: 'Roasted chana (30g)', p: 6, cal: 110 },
+      { food: '1 fruit', p: 1, cal: 70 }
+    ]},
+    { name: 'Dinner', color: '#ede7f6', hdr: '#6a1b9a', items: [
+      { food: '100g paneer', p: 18, cal: 265 },
+      { food: '1 bowl rice / 2 rotis', p: 4, cal: 200 },
+      { food: 'Salad + sabji', p: 4, cal: 100 }
+    ]}
+  ]
+};
+
+function calculate() {
+  const age = +document.getElementById('age').value;
+  const weight = +document.getElementById('weight').value;
+  const height = +document.getElementById('height').value;
+  const gender = document.getElementById('gender').value;
+  const activity = +document.getElementById('activity').value;
+
+  if (!age || !weight || !height) { alert('Please fill all fields.'); return; }
+
+  // Mifflin-St Jeor
+  let bmr = gender === 'male'
+    ? 10 * weight + 6.25 * height - 5 * age + 5
+    : 10 * weight + 6.25 * height - 5 * age - 161;
+
+  let tdee = Math.round(bmr * activity);
+  let targetCal = tdee;
+  let proteinMultiplier = 1.8;
+
+  if (selectedGoal === 'muscle') { targetCal = tdee + 300; proteinMultiplier = 2.0; }
+  if (selectedGoal === 'loss')   { targetCal = tdee - 500; proteinMultiplier = 2.2; }
+
+  const protein = Math.round(weight * proteinMultiplier);
+
+  document.getElementById('t-cal').textContent = targetCal;
+  document.getElementById('t-protein').textContent = protein + 'g';
+  document.getElementById('t-bmr').textContent = Math.round(bmr);
+
+  const plan = PLANS[selectedGoal];
+  let html = '';
+  plan.forEach(meal => {
+    const totalP = meal.items.reduce((s, i) => s + i.p, 0);
+    const totalC = meal.items.reduce((s, i) => s + i.cal, 0);
+    html += `<div class="meal-section">
+      <div class="meal-header" style="background:${meal.color};color:${meal.hdr}">
+        <span>${meal.name}</span>
+        <span>${totalP}g protein · ${totalC} kcal</span>
+      </div>
+      <div class="meal-body">
+        ${meal.items.map(i => `<div class="meal-row"><span>${i.food}</span><span class="macro">${i.p}g · ${i.cal} cal</span></div>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('meal-plan').innerHTML = html;
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
