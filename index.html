@@ -23,6 +23,7 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 .toggle-btn.active-goal { border-color: #2d6a4f; background: #d8f3dc; color: #2d6a4f; }
 .btn-calc { width: 100%; padding: 12px; background: #2d6a4f; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 1rem; }
 .btn-calc:hover { background: #1b4332; }
+.btn-calc:disabled { background: #888; cursor: not-allowed; }
 .targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
 .target-box { text-align: center; padding: 1rem; border-radius: 10px; background: #f0faf4; border: 1px solid #b7e4c7; }
 .target-box .val { font-size: 1.6rem; font-weight: 700; color: #1b4332; }
@@ -33,9 +34,14 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 .meal-section { margin-bottom: 1.1rem; }
 .meal-header { display: flex; justify-content: space-between; align-items: center; padding: .6rem .9rem; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 14px; }
 .meal-body { border: 1px solid #e8e8e0; border-top: none; border-radius: 0 0 8px 8px; }
-.meal-row { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 12px; border-bottom: 1px solid #f0f0ec; color: #333; }
+.meal-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 7px 12px; border-bottom: 1px solid #f0f0ec; color: #333; gap: 8px; }
 .meal-row:last-child { border-bottom: none; }
+.meal-row .food-name { flex: 1; }
 .meal-row .macro { color: #888; font-size: 12px; white-space: nowrap; }
+.swap-btn { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid #2d6a4f; color: #2d6a4f; background: white; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.swap-btn:hover { background: #d8f3dc; }
+.swap-btn:disabled { border-color: #aaa; color: #aaa; cursor: not-allowed; }
+.swap-result { font-size: 12px; color: #1b4332; background: #d8f3dc; border-radius: 6px; padding: 4px 10px; margin: 0 12px 6px; border-left: 3px solid #2d6a4f; }
 .day-total { display: flex; justify-content: center; gap: 2rem; padding: .9rem; background: #f8faf8; border-radius: 10px; border: 1px solid #d0eada; margin-top: .5rem; }
 .day-total span { font-size: 14px; font-weight: 600; color: #1b4332; }
 .day-total small { font-size: 12px; color: #666; font-weight: 400; }
@@ -43,36 +49,26 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-left: 6px; vertical-align: middle; }
 .badge-veg { background: #d8f3dc; color: #2d6a4f; }
 .badge-nonveg { background: #fde8e0; color: #b5451b; }
+.loading-box { text-align: center; padding: 2rem; color: #555; }
+.spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #d8f3dc; border-top-color: #2d6a4f; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-badge { display: inline-block; font-size: 11px; background: #e8f4fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 20px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
+.error-box { background: #fde8e0; border: 1px solid #f5c6b0; border-radius: 8px; padding: 1rem; color: #b5451b; font-size: 14px; margin-top: 1rem; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Indian Diet Planner</h1>
-  <p>Personalized 7-day Indian meal plans — veg & non-veg — based on your goal</p>
+  <h1>Indian Diet Planner <span style="font-size:13px;opacity:0.8;font-weight:400">powered by Groq AI</span></h1>
+  <p>AI-generated personalized 7-day Indian meal plans with smart swap suggestions</p>
 </header>
 <div class="container">
   <div class="card">
     <h2>Client Details</h2>
     <div class="grid">
-      <div>
-        <label>Age (years)</label>
-        <input type="number" id="age" placeholder="25" min="15" max="80">
-      </div>
-      <div>
-        <label>Gender</label>
-        <select id="gender">
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </select>
-      </div>
-      <div>
-        <label>Weight (kg)</label>
-        <input type="number" id="weight" placeholder="70" min="30" max="200">
-      </div>
-      <div>
-        <label>Height (cm)</label>
-        <input type="number" id="height" placeholder="175" min="100" max="250">
-      </div>
+      <div><label>Age (years)</label><input type="number" id="age" placeholder="25" min="15" max="80"></div>
+      <div><label>Gender</label><select id="gender"><option value="male">Male</option><option value="female">Female</option></select></div>
+      <div><label>Weight (kg)</label><input type="number" id="weight" placeholder="70" min="30" max="200"></div>
+      <div><label>Height (cm)</label><input type="number" id="height" placeholder="175" min="100" max="250"></div>
     </div>
     <div style="margin-top:1rem">
       <label>Activity Level</label>
@@ -85,7 +81,7 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
     </div>
     <div style="margin-top:1rem">
       <label>Diet Type</label>
-      <div class="toggle-row">
+      <div class="toggle-row" id="diet-row">
         <button class="toggle-btn active-veg" onclick="setDiet(this,'veg')">🥦 Vegetarian</button>
         <button class="toggle-btn" onclick="setDiet(this,'nonveg')">🍗 Non-Vegetarian</button>
       </div>
@@ -93,14 +89,14 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
     </div>
     <div style="margin-top:1rem">
       <label>Goal</label>
-      <div class="toggle-row">
+      <div class="toggle-row" id="goal-row">
         <button class="toggle-btn active-goal" onclick="setGoal(this,'muscle')">💪 Muscle Gain</button>
         <button class="toggle-btn" onclick="setGoal(this,'loss')">🔥 Weight Loss</button>
         <button class="toggle-btn" onclick="setGoal(this,'maintain')">⚖️ Maintain</button>
       </div>
       <input type="hidden" id="goal" value="muscle">
     </div>
-    <button class="btn-calc" onclick="calculate()">Generate 7-Day Diet Plan</button>
+    <button class="btn-calc" id="gen-btn" onclick="generatePlan()">✨ Generate AI Diet Plan</button>
   </div>
 
   <div id="results">
@@ -121,346 +117,28 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 </div>
 
 <script>
+const GROQ_API_KEY = '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';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
 let selectedGoal = 'muscle';
 let selectedDiet = 'veg';
 let currentDay = 0;
 let generatedPlan = [];
+let clientStats = {};
 
 function setDiet(btn, val) {
-  document.querySelectorAll('.toggle-row')[0].querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-veg','active-nonveg'));
+  document.getElementById('diet-row').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-veg','active-nonveg'));
   btn.classList.add(val === 'veg' ? 'active-veg' : 'active-nonveg');
   selectedDiet = val;
 }
 function setGoal(btn, val) {
-  document.querySelectorAll('.toggle-row')[1].querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-goal'));
+  document.getElementById('goal-row').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-goal'));
   btn.classList.add('active-goal');
   selectedGoal = val;
 }
 
-// ── VEG PLANS ──────────────────────────────────────────────
-const VEG = {
-  muscle: [
-    { day:'Monday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'4 boiled eggs (whole)',p:24,k:280},{f:'2 besan chillas',p:10,k:240},{f:'1 bowl curd',p:6,k:100},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 banana',p:1,k:90},{f:'20 almonds',p:5,k:140}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis (whole wheat)',p:12,k:320},{f:'2 bowls dal (moong/chana)',p:18,k:320},{f:'Paneer sabji (100g paneer)',p:18,k:250},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts chaat (1 bowl)',p:12,k:150},{f:'50g roasted chana',p:10,k:180}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'150g paneer bhurji',p:27,k:300},{f:'1 bowl rice',p:4,k:200},{f:'1 bowl curd',p:6,k:100},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Tuesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Moong dal chilla (3 pcs)',p:15,k:270},{f:'1 bowl curd',p:6,k:100},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 apple',p:0,k:80},{f:'1 scoop whey in water',p:25,k:120}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Rajma curry (1 bowl)',p:15,k:280},{f:'Sabji (any)',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Peanut butter toast (2 slices)',p:10,k:220},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'2 bowls dal',p:14,k:300},{f:'2 rotis',p:6,k:160},{f:'Sabji',p:3,k:100},{f:'1 bowl curd',p:6,k:100}]}
-    ]},
-    { day:'Wednesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 scrambled eggs + 1 egg white',p:22,k:240},{f:'2 slices whole wheat toast',p:6,k:160},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Mixed fruit bowl',p:2,k:120},{f:'15 cashews',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl rice',p:4,k:200},{f:'Chole curry (1 bowl)',p:15,k:280},{f:'Raita',p:4,k:80},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Makhana (50g roasted)',p:6,k:180},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Paneer tikka (150g)',p:27,k:280},{f:'2 rotis',p:6,k:160},{f:'Dal soup',p:8,k:150}]}
-    ]},
-    { day:'Thursday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Oats with milk (1 bowl)',p:10,k:280},{f:'4 boiled eggs',p:24,k:280},{f:'1 banana',p:1,k:90}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Greek yogurt (1 bowl)',p:10,k:100},{f:'10 walnuts',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Mixed dal (2 bowls)',p:18,k:320},{f:'Paneer sabji (100g)',p:18,k:220},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts + boiled egg white (2)',p:16,k:160},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Soya chunks curry (100g dry)',p:26,k:250},{f:'1 bowl rice',p:4,k:200},{f:'Raita',p:4,k:80}]}
-    ]},
-    { day:'Friday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 besan chillas',p:15,k:360},{f:'1 bowl curd',p:6,k:100},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 pear / orange',p:1,k:70},{f:'20 almonds',p:5,k:140}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Kidney bean curry (1 bowl)',p:15,k:280},{f:'Sabji',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Peanut butter (2 tbsp) + 2 rotis',p:12,k:280},{f:'Milk (1 glass)',p:8,k:150}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Paneer + tofu stir fry (200g)',p:30,k:300},{f:'2 rotis',p:6,k:160},{f:'Dal soup',p:8,k:150}]}
-    ]},
-    { day:'Saturday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Masala omelette (4 eggs)',p:26,k:320},{f:'2 whole wheat toast',p:6,k:160},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Protein smoothie (milk+banana+curd)',p:15,k:250}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 bowls rice',p:8,k:400},{f:'Dal makhani (1 bowl)',p:16,k:320},{f:'Paneer sabji (100g)',p:18,k:220},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'50g roasted chana',p:10,k:180},{f:'1 boiled egg',p:6,k:70}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Palak paneer (150g paneer)',p:27,k:320},{f:'3 rotis',p:9,k:240},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Sunday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Aloo paratha (2) with curd',p:10,k:420},{f:'4 egg whites omelette',p:16,k:120},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Fruit chaat (mixed)',p:2,k:130},{f:'15 almonds',p:4,k:100}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Chole (1 bowl)',p:15,k:280},{f:'Paneer sabji',p:18,k:220},{f:'Raita',p:4,k:80}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts bhel (1 bowl)',p:12,k:150},{f:'Buttermilk (1 glass)',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Paneer biryani (1 bowl)',p:22,k:380},{f:'Raita (1 bowl)',p:4,k:80},{f:'Salad',p:2,k:40}]}
-    ]}
-  ],
-  loss: [
-    { day:'Monday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 egg whites + 1 whole egg',p:16,k:130},{f:'1 besan chilla',p:5,k:120},{f:'Low fat curd (1 bowl)',p:6,k:70}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 apple',p:0,k:80},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis (whole wheat)',p:6,k:160},{f:'Moong dal (1 bowl)',p:12,k:180},{f:'Sabji (low oil)',p:3,k:80},{f:'Large salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts chaat (small)',p:8,k:100},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'100g paneer (grilled)',p:18,k:180},{f:'1 bowl vegetable soup',p:3,k:60},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Tuesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Oats (40g) with water + nuts',p:8,k:200},{f:'3 egg whites',p:12,k:55}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 guava',p:1,k:60},{f:'Buttermilk (1 glass)',p:3,k:40}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Dal (1 bowl)',p:12,k:180},{f:'Sabji (steamed)',p:3,k:70},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Makhana (30g roasted)',p:4,k:110}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Tofu stir fry (150g)',p:16,k:160},{f:'Sabji + soup',p:4,k:100},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Wednesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Moong dal chilla (2)',p:10,k:180},{f:'Low fat curd',p:6,k:70}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 orange',p:1,k:65},{f:'5 walnuts',p:2,k:65}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl brown rice',p:4,k:180},{f:'Rajma (1 small bowl)',p:10,k:180},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Roasted chana (30g)',p:6,k:110}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Palak soup + 100g paneer',p:20,k:200},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Thursday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'2 boiled eggs + 2 whites',p:18,k:160},{f:'1 whole wheat toast',p:3,k:80},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Buttermilk',p:3,k:40},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Mixed dal (1 bowl)',p:12,k:180},{f:'Sabji',p:3,k:80},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts (1 cup)',p:8,k:100}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Soya chunks (50g dry)',p:13,k:130},{f:'1 bowl vegetable soup',p:3,k:60},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Friday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Vegetable oats upma',p:8,k:200},{f:'1 boiled egg',p:6,k:70},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 pear',p:0,k:70},{f:'Buttermilk',p:3,k:40}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Chole (small bowl)',p:10,k:180},{f:'Sabji + salad',p:4,k:100}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Makhana (30g)',p:4,k:110},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'100g paneer tikka (grilled)',p:18,k:180},{f:'Sabji soup',p:4,k:80},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Saturday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'2 besan chillas',p:10,k:240},{f:'Low fat curd',p:6,k:70}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Mixed fruit (small bowl)',p:1,k:100},{f:'5 almonds',p:1,k:35}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl brown rice',p:4,k:180},{f:'Dal (1 bowl)',p:12,k:180},{f:'Sabji',p:3,k:80},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Roasted chana (30g)',p:6,k:110}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Tofu + palak sabji (200g tofu)',p:20,k:190},{f:'Salad + soup',p:4,k:80}]}
-    ]},
-    { day:'Sunday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 egg white omelette (veg)',p:12,k:100},{f:'1 whole wheat toast',p:3,k:80},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 banana (small)',p:1,k:80},{f:'Buttermilk',p:3,k:40}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Mixed dal',p:12,k:180},{f:'Paneer (50g)',p:9,k:110},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts bhel (small)',p:8,k:100}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Dal khichdi (1 bowl)',p:12,k:250},{f:'Raita (low fat)',p:4,k:60},{f:'Salad',p:2,k:50}]}
-    ]}
-  ],
-  maintain: [
-    { day:'Monday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 boiled eggs',p:18,k:210},{f:'2 besan chillas',p:10,k:240},{f:'1 bowl curd',p:6,k:100}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 fruit',p:1,k:80},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Dal (1 bowl)',p:12,k:200},{f:'Sabji',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Roasted chana (30g)',p:6,k:110},{f:'1 fruit',p:1,k:70}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'100g paneer',p:18,k:265},{f:'1 bowl rice',p:4,k:200},{f:'Salad + sabji',p:4,k:100}]}
-    ]},
-    { day:'Tuesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Moong dal chilla (3)',p:15,k:270},{f:'1 bowl curd',p:6,k:100},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 banana',p:1,k:90},{f:'5 walnuts',p:2,k:65}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Rajma (1 bowl)',p:14,k:250},{f:'Sabji',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Makhana (30g)',p:4,k:110},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Soya chunks curry (75g dry)',p:20,k:200},{f:'2 rotis',p:6,k:160},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Wednesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Oats (50g) with milk',p:10,k:280},{f:'3 boiled eggs',p:18,k:210}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Mixed fruit bowl',p:2,k:120},{f:'10 cashews',p:3,k:90}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl rice',p:4,k:200},{f:'Dal (1 bowl)',p:12,k:200},{f:'Paneer sabji (75g)',p:14,k:180},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts (1 cup)',p:8,k:100},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Paneer bhurji (100g)',p:18,k:220},{f:'2 rotis',p:6,k:160},{f:'Raita',p:4,k:80}]}
-    ]},
-    { day:'Thursday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'2 parathas (whole wheat) + curd',p:10,k:380},{f:'2 boiled eggs',p:12,k:140}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 orange',p:1,k:65},{f:'15 almonds',p:4,k:100}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Chole (1 bowl)',p:14,k:250},{f:'Sabji',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Peanut butter (1 tbsp) + toast',p:7,k:180},{f:'Milk (1 glass)',p:8,k:150}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Dal tadka (2 bowls)',p:16,k:300},{f:'1 bowl rice',p:4,k:200},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Friday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 besan chillas',p:15,k:360},{f:'Curd (1 bowl)',p:6,k:100}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 pear',p:0,k:70},{f:'10 walnuts',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Mixed dal (1 bowl)',p:14,k:240},{f:'Sabji',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Roasted chana (30g)',p:6,k:110},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Tofu stir fry (150g)',p:16,k:180},{f:'2 rotis',p:6,k:160},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Saturday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'4 egg omelette (masala)',p:26,k:320},{f:'2 toast',p:6,k:160}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Banana + milk smoothie',p:10,k:210}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl rice',p:4,k:200},{f:'Dal makhani (1 bowl)',p:14,k:280},{f:'Paneer sabji (75g)',p:14,k:180},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Makhana + roasted chana (mixed)',p:8,k:180}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Paneer tikka (100g)',p:18,k:220},{f:'2 rotis',p:6,k:160},{f:'Raita',p:4,k:80}]}
-    ]},
-    { day:'Sunday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Aloo paratha (2) + curd',p:10,k:420},{f:'3 boiled eggs',p:18,k:210}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Fruit chaat',p:2,k:120},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Rajma (1 bowl)',p:14,k:250},{f:'Paneer sabji',p:14,k:180},{f:'Raita',p:4,k:80}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Sprouts bhel',p:10,k:130}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Dal khichdi (1 bowl)',p:12,k:280},{f:'Curd',p:6,k:100},{f:'Salad',p:2,k:40}]}
-    ]}
-  ]
-};
-
-// ── NON-VEG PLANS ──────────────────────────────────────────
-const NONVEG = {
-  muscle: [
-    { day:'Monday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'4 boiled eggs',p:24,k:280},{f:'2 besan chillas',p:10,k:240},{f:'1 bowl curd',p:6,k:100},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 banana',p:1,k:90},{f:'20 almonds',p:5,k:140}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Chicken curry (150g)',p:30,k:250},{f:'2 bowls dal',p:14,k:300},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled eggs',p:12,k:140},{f:'50g roasted chana',p:10,k:180}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'150g grilled chicken',p:36,k:230},{f:'1 bowl rice',p:4,k:200},{f:'1 bowl curd',p:6,k:100},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Tuesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Egg bhurji (4 eggs)',p:24,k:280},{f:'2 whole wheat toast',p:6,k:160},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 apple',p:0,k:80},{f:'Whey protein shake',p:25,k:120}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Fish curry (150g)',p:28,k:220},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Chicken tikka (100g)',p:22,k:150},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Egg curry (3 eggs)',p:20,k:280},{f:'2 rotis',p:6,k:160},{f:'Sabji',p:3,k:80}]}
-    ]},
-    { day:'Wednesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Masala omelette (4 eggs)',p:26,k:320},{f:'2 toast',p:6,k:160},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Mixed fruit bowl',p:2,k:120},{f:'15 cashews',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl rice',p:4,k:200},{f:'Mutton curry (150g)',p:32,k:320},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled eggs',p:12,k:140},{f:'Sprouts chaat (small)',p:8,k:100}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Grilled fish (200g)',p:36,k:220},{f:'2 rotis',p:6,k:160},{f:'Salad + raita',p:5,k:100}]}
-    ]},
-    { day:'Thursday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Chicken keema omelette (3 eggs)',p:30,k:300},{f:'2 toast',p:6,k:160},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Greek yogurt',p:10,k:100},{f:'1 banana',p:1,k:90}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Chicken dal (mixed)',p:30,k:300},{f:'Sabji',p:3,k:80},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Egg white bhurji (4 whites)',p:16,k:80},{f:'Roasted chana (30g)',p:6,k:110}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Tandoori chicken (200g)',p:40,k:280},{f:'1 bowl rice',p:4,k:200},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Friday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'4 eggs scrambled',p:24,k:280},{f:'2 besan chillas',p:10,k:240},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 pear',p:0,k:70},{f:'20 almonds',p:5,k:140}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Fish fry (150g)',p:28,k:230},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Chicken breast (100g boiled)',p:22,k:120},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Egg biryani (2 eggs + rice)',p:22,k:380},{f:'Raita',p:4,k:80},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Saturday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Chicken sandwich (whole wheat, 2)',p:28,k:380},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Protein smoothie (milk+banana+egg)',p:18,k:270}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 bowls rice',p:8,k:400},{f:'Chicken curry (200g)',p:40,k:320},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'3 boiled eggs',p:18,k:210},{f:'Roasted chana (30g)',p:6,k:110}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Grilled chicken (200g)',p:40,k:250},{f:'2 rotis',p:6,k:160},{f:'Salad + raita',p:5,k:100}]}
-    ]},
-    { day:'Sunday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Anda paratha (2, egg stuffed)',p:18,k:440},{f:'1 glass milk',p:8,k:150},{f:'Curd',p:6,k:100}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Fruit chaat',p:2,k:130},{f:'15 almonds',p:4,k:100}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'4 rotis',p:12,k:320},{f:'Mutton/chicken (200g)',p:40,k:320},{f:'Dal (1 bowl)',p:12,k:200},{f:'Raita',p:4,k:80}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Egg whites (4) bhurji',p:16,k:80},{f:'Sprouts (small)',p:8,k:100}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Chicken biryani (1 bowl)',p:32,k:420},{f:'Raita',p:4,k:80},{f:'Salad',p:2,k:40}]}
-    ]}
-  ],
-  loss: [
-    { day:'Monday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 egg whites + 1 whole egg',p:16,k:130},{f:'1 besan chilla',p:5,k:120},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 apple',p:0,k:80},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Grilled chicken (100g)',p:22,k:130},{f:'Sabji (low oil)',p:3,k:80},{f:'Large salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled egg whites',p:8,k:40},{f:'Buttermilk',p:3,k:40}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Fish (150g steamed/grilled)',p:28,k:160},{f:'Vegetable soup',p:3,k:60},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Tuesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Oats (40g) with water',p:8,k:200},{f:'3 egg whites bhurji',p:12,k:55}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 guava',p:1,k:60},{f:'Buttermilk',p:3,k:40}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Chicken salad bowl (100g)',p:22,k:150},{f:'Dal (small)',p:8,k:130},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'1 boiled egg',p:6,k:70},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Egg curry (2 eggs, light gravy)',p:14,k:180},{f:'1 roti',p:3,k:80},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Wednesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'2 egg omelette (veg)',p:12,k:150},{f:'1 toast',p:3,k:80},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 orange',p:1,k:65},{f:'5 walnuts',p:2,k:65}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl brown rice',p:4,k:180},{f:'Fish curry (100g, light)',p:20,k:160},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Roasted chana (30g)',p:6,k:110}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Grilled chicken (120g)',p:26,k:160},{f:'Veggie soup',p:3,k:60},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Thursday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 boiled eggs (1 yolk only)',p:18,k:160},{f:'1 toast',p:3,k:80}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Buttermilk',p:3,k:40},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Chicken keema (100g, low oil)',p:22,k:170},{f:'Sabji',p:3,k:80},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled egg whites',p:8,k:40},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Steamed fish (150g)',p:28,k:150},{f:'Vegetable soup',p:3,k:60},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Friday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Egg white omelette (4 whites)',p:16,k:80},{f:'1 besan chilla',p:5,k:120},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 pear',p:0,k:70},{f:'Buttermilk',p:3,k:40}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Grilled chicken salad (100g)',p:22,k:140},{f:'Sabji + salad',p:4,k:100}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'1 boiled egg',p:6,k:70},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Fish tikka (150g)',p:28,k:170},{f:'Sabji soup',p:4,k:80},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Saturday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Chicken sandwich (1, whole wheat)',p:20,k:250},{f:'Green tea',p:0,k:5}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 fruit',p:1,k:80},{f:'5 almonds',p:1,k:35}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl brown rice',p:4,k:180},{f:'Chicken curry (100g, light)',p:22,k:180},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled eggs',p:12,k:140}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Egg bhurji (3 eggs, low oil)',p:18,k:200},{f:'1 roti',p:3,k:80},{f:'Salad',p:2,k:50}]}
-    ]},
-    { day:'Sunday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 eggs (masala omelette, less oil)',p:18,k:200},{f:'1 toast',p:3,k:80}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 banana (small)',p:1,k:80},{f:'Buttermilk',p:3,k:40}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'2 rotis',p:6,k:160},{f:'Dal (1 bowl)',p:12,k:180},{f:'Grilled chicken (75g)',p:16,k:100},{f:'Salad',p:2,k:50}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'1 boiled egg',p:6,k:70},{f:'Sprouts (small)',p:8,k:100}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Fish soup (200g fish)',p:30,k:180},{f:'Salad',p:2,k:50}]}
-    ]}
-  ],
-  maintain: [
-    { day:'Monday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'3 boiled eggs',p:18,k:210},{f:'2 besan chillas',p:10,k:240},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 fruit',p:1,k:80},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Chicken curry (100g)',p:22,k:200},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled eggs',p:12,k:140},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Fish curry (150g)',p:28,k:220},{f:'1 bowl rice',p:4,k:200},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Tuesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Egg bhurji (3 eggs)',p:18,k:230},{f:'2 toast',p:6,k:160},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 banana',p:1,k:90},{f:'10 walnuts',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Chicken dal mixed',p:26,k:280},{f:'Sabji',p:3,k:100},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Roasted chana (30g)',p:6,k:110},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Egg curry (3 eggs)',p:20,k:280},{f:'2 rotis',p:6,k:160},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Wednesday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Oats (50g) with milk',p:10,k:280},{f:'3 boiled eggs',p:18,k:210}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Mixed fruit',p:2,k:120},{f:'15 cashews',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl rice',p:4,k:200},{f:'Fish curry (150g)',p:28,k:200},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Chicken tikka (75g)',p:16,k:110},{f:'Green tea',p:0,k:5}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Grilled chicken (150g)',p:30,k:190},{f:'2 rotis',p:6,k:160},{f:'Raita',p:4,k:80}]}
-    ]},
-    { day:'Thursday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Anda paratha (2)',p:16,k:420},{f:'Curd',p:6,k:100}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 orange',p:1,k:65},{f:'15 almonds',p:4,k:100}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Mutton curry (100g)',p:22,k:250},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled eggs',p:12,k:140},{f:'Milk (1 glass)',p:8,k:150}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Dal tadka (2 bowls)',p:16,k:300},{f:'1 bowl rice',p:4,k:200},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Friday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'4 egg masala omelette',p:26,k:320},{f:'2 toast',p:6,k:160}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'1 pear',p:0,k:70},{f:'10 walnuts',p:4,k:130}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Fish fry (150g)',p:28,k:230},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'Boiled eggs (2)',p:12,k:140},{f:'Buttermilk',p:3,k:50}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Egg biryani (2 eggs)',p:20,k:380},{f:'Raita',p:4,k:80},{f:'Salad',p:2,k:40}]}
-    ]},
-    { day:'Saturday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Chicken sandwich (whole wheat)',p:24,k:320},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Banana milk smoothie',p:10,k:210}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'1 bowl rice',p:4,k:200},{f:'Chicken curry (150g)',p:30,k:250},{f:'Dal (1 bowl)',p:12,k:200},{f:'Salad',p:2,k:40}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'3 boiled eggs',p:18,k:210}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Tandoori chicken (150g)',p:30,k:210},{f:'2 rotis',p:6,k:160},{f:'Salad + raita',p:5,k:100}]}
-    ]},
-    { day:'Sunday', meals:[
-      {n:'Breakfast',c:'#fff8e1',h:'#f57f17',items:[{f:'Anda paratha (2) + curd',p:16,k:440},{f:'1 glass milk',p:8,k:150}]},
-      {n:'Mid-Morning',c:'#fce4ec',h:'#c62828',items:[{f:'Fruit chaat',p:2,k:130},{f:'10 almonds',p:3,k:70}]},
-      {n:'Lunch',c:'#e8f5e9',h:'#2e7d32',items:[{f:'3 rotis',p:9,k:240},{f:'Mutton/chicken (200g)',p:40,k:320},{f:'Dal (1 bowl)',p:12,k:200},{f:'Raita',p:4,k:80}]},
-      {n:'Evening Snack',c:'#e3f2fd',h:'#1565c0',items:[{f:'2 boiled eggs',p:12,k:140},{f:'Sprouts (small)',p:8,k:100}]},
-      {n:'Dinner',c:'#ede7f6',h:'#6a1b9a',items:[{f:'Chicken biryani (1 bowl)',p:32,k:420},{f:'Raita',p:4,k:80},{f:'Salad',p:2,k:40}]}
-    ]}
-  ]
-};
-
-const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-function calculate() {
-  const age = +document.getElementById('age').value;
-  const weight = +document.getElementById('weight').value;
-  const height = +document.getElementById('height').value;
-  const gender = document.getElementById('gender').value;
-  const activity = +document.getElementById('activity').value;
-  if (!age || !weight || !height) { alert('Please fill all fields.'); return; }
-
+function calcTargets(weight, height, age, gender, activity) {
   let bmr = gender === 'male'
     ? 10*weight + 6.25*height - 5*age + 5
     : 10*weight + 6.25*height - 5*age - 161;
@@ -469,59 +147,245 @@ function calculate() {
   let proteinMult = 1.8;
   if (selectedGoal==='muscle'){targetCal=tdee+300;proteinMult=2.0;}
   if (selectedGoal==='loss'){targetCal=tdee-500;proteinMult=2.2;}
-  const protein = Math.round(weight * proteinMult);
+  return { bmr: Math.round(bmr), tdee, targetCal, protein: Math.round(weight*proteinMult) };
+}
 
-  document.getElementById('t-cal').textContent = targetCal;
-  document.getElementById('t-protein').textContent = protein+'g';
-  document.getElementById('t-bmr').textContent = Math.round(bmr);
+async function callGroq(messages, maxTokens=2000) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages
+    })
+  });
+  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
 
-  const dietData = selectedDiet==='veg' ? VEG : NONVEG;
-  generatedPlan = dietData[selectedGoal];
-  currentDay = 0;
+async function generatePlan() {
+  const age = +document.getElementById('age').value;
+  const weight = +document.getElementById('weight').value;
+  const height = +document.getElementById('height').value;
+  const gender = document.getElementById('gender').value;
+  const activity = +document.getElementById('activity').value;
+
+  if (!age || !weight || !height) { alert('Please fill all fields.'); return; }
+
+  const targets = calcTargets(weight, height, age, gender, activity);
+  clientStats = { age, weight, height, gender, activity, diet: selectedDiet, goal: selectedGoal, ...targets };
+
+  document.getElementById('t-cal').textContent = targets.targetCal;
+  document.getElementById('t-protein').textContent = targets.protein + 'g';
+  document.getElementById('t-bmr').textContent = targets.bmr;
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating your plan...';
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
 
   const badge = selectedDiet==='veg'
     ? '<span class="badge badge-veg">Vegetarian</span>'
     : '<span class="badge badge-nonveg">Non-Veg</span>';
-  document.getElementById('plan-title').innerHTML = '7-Day Meal Plan '+badge;
+  document.getElementById('plan-title').innerHTML = '7-Day Meal Plan ' + badge + '<span class="ai-badge">✨ AI Generated</span>';
 
-  const tabs = document.getElementById('day-tabs');
-  tabs.innerHTML = DAYS.map((d,i)=>`<button class="day-tab${i===0?' active':''}" onclick="switchDay(${i},this)">${d}</button>`).join('');
+  document.getElementById('day-tabs').innerHTML = '';
+  document.getElementById('meal-plan').innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Generating your personalized 7-day plan...<br><small style="color:#888">This takes about 10-15 seconds</small></div>`;
 
-  renderDay(0);
-  document.getElementById('results').style.display='block';
-  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+  try {
+    const goalLabel = selectedGoal==='muscle'?'Muscle Gain':selectedGoal==='loss'?'Weight Loss':'Maintenance';
+    const dietLabel = selectedDiet==='veg'?'Vegetarian (no meat/fish, eggs allowed)':'Non-Vegetarian (includes chicken, fish, eggs)';
+
+    const prompt = `You are an expert Indian diet planner. Create a personalized 7-day Indian meal plan.
+
+CLIENT PROFILE:
+- Age: ${age} years, Gender: ${gender}
+- Weight: ${weight}kg, Height: ${height}cm
+- Goal: ${goalLabel}
+- Diet: ${dietLabel}
+- Daily calorie target: ${targets.targetCal} kcal
+- Daily protein target: ${targets.protein}g
+
+RULES:
+- Use realistic Indian foods only (rotis, dal, sabji, rice, paneer max 50g per serving, eggs, chicken, fish etc.)
+- Never combine milk and curd in the same meal
+- Max 5 almonds per serving
+- 5 meals per day: Breakfast, Mid-Morning, Lunch, Evening Snack, Dinner
+- Each meal item must have realistic protein(g) and calories(kcal)
+- Vary the meals across 7 days — no repetition of exact same day
+- Keep portions realistic and healthy
+
+Return ONLY a valid JSON array with this exact structure, no explanation:
+[
+  {
+    "day": "Monday",
+    "meals": [
+      {
+        "name": "Breakfast",
+        "color": "#fff8e1",
+        "headerColor": "#f57f17",
+        "items": [
+          {"food": "3 boiled eggs", "protein": 18, "calories": 210},
+          {"food": "2 besan chillas", "protein": 10, "calories": 240}
+        ]
+      },
+      {
+        "name": "Mid-Morning",
+        "color": "#fce4ec",
+        "headerColor": "#c62828",
+        "items": [...]
+      },
+      {
+        "name": "Lunch",
+        "color": "#e8f5e9",
+        "headerColor": "#2e7d32",
+        "items": [...]
+      },
+      {
+        "name": "Evening Snack",
+        "color": "#e3f2fd",
+        "headerColor": "#1565c0",
+        "items": [...]
+      },
+      {
+        "name": "Dinner",
+        "color": "#ede7f6",
+        "headerColor": "#6a1b9a",
+        "items": [...]
+      }
+    ]
+  }
+]
+Generate all 7 days (Monday through Sunday). Return only the JSON array.`;
+
+    const raw = await callGroq([{role:'user', content: prompt}], 4000);
+
+    // Parse JSON from response
+    let jsonStr = raw.trim();
+    const match = jsonStr.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Could not parse meal plan from AI response');
+    generatedPlan = JSON.parse(match[0]);
+
+    currentDay = 0;
+    const tabs = document.getElementById('day-tabs');
+    tabs.innerHTML = DAYS.map((d,i) => `<button class="day-tab${i===0?' active':''}" onclick="switchDay(${i},this)">${d}</button>`).join('');
+    renderDay(0);
+
+  } catch(err) {
+    document.getElementById('meal-plan').innerHTML = `<div class="error-box">⚠️ Failed to generate plan: ${err.message}<br><br>Check your API key or try again.</div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '✨ Regenerate Plan';
 }
 
 function switchDay(idx, btn) {
   currentDay = idx;
-  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   renderDay(idx);
 }
 
 function renderDay(idx) {
   const dayData = generatedPlan[idx];
+  if (!dayData) return;
   let html = '';
   let dayTotalP = 0, dayTotalK = 0;
-  dayData.meals.forEach(meal => {
-    const tp = meal.items.reduce((s,i)=>s+i.p,0);
-    const tk = meal.items.reduce((s,i)=>s+i.k,0);
+
+  dayData.meals.forEach((meal, mi) => {
+    const tp = meal.items.reduce((s,i) => s + (i.protein||0), 0);
+    const tk = meal.items.reduce((s,i) => s + (i.calories||0), 0);
     dayTotalP += tp; dayTotalK += tk;
     html += `<div class="meal-section">
-      <div class="meal-header" style="background:${meal.c};color:${meal.h}">
-        <span>${meal.n}</span>
+      <div class="meal-header" style="background:${meal.color};color:${meal.headerColor}">
+        <span>${meal.name}</span>
         <span>${tp}g protein &middot; ${tk} kcal</span>
       </div>
-      <div class="meal-body">
-        ${meal.items.map(i=>`<div class="meal-row"><span>${i.f}</span><span class="macro">${i.p}g &middot; ${i.k} cal</span></div>`).join('')}
+      <div class="meal-body" id="meal-body-${idx}-${mi}">
+        ${meal.items.map((item, ii) => `
+          <div class="meal-row" id="row-${idx}-${mi}-${ii}">
+            <span class="food-name">${item.food}</span>
+            <span class="macro">${item.protein}g &middot; ${item.calories} cal</span>
+            <button class="swap-btn" onclick="swapItem(${idx},${mi},${ii},this)" title="Suggest a swap">⇄ Swap</button>
+          </div>`).join('')}
       </div>
     </div>`;
   });
+
   html += `<div class="day-total">
     <span>${dayTotalP}g <small>protein today</small></span>
     <span>${dayTotalK} <small>kcal today</small></span>
   </div>`;
   document.getElementById('meal-plan').innerHTML = html;
+}
+
+async function swapItem(dayIdx, mealIdx, itemIdx, btn) {
+  const item = generatedPlan[dayIdx].meals[mealIdx].items[itemIdx];
+  const mealName = generatedPlan[dayIdx].meals[mealIdx].name;
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    const prompt = `You are an Indian diet expert. Suggest ONE alternative food swap.
+
+Current item: "${item.food}" (${item.protein}g protein, ${item.calories} kcal) — in ${mealName}
+Client diet: ${clientStats.diet === 'veg' ? 'Vegetarian' : 'Non-Vegetarian'}
+Client goal: ${clientStats.goal}
+
+Give ONE swap that:
+- Is a common Indian food
+- Has similar or better protein
+- Fits the meal time (${mealName})
+- Never combines milk and curd together
+- Max 50g paneer if paneer is suggested
+
+Reply in this exact format only:
+SWAP: [food name and quantity] | [protein]g protein | [calories] kcal
+REASON: [one short sentence why]`;
+
+    const raw = await callGroq([{role:'user', content: prompt}], 200);
+
+    const swapMatch = raw.match(/SWAP:\s*(.+?)\s*\|\s*(\d+)g protein\s*\|\s*(\d+)\s*kcal/i);
+    const reasonMatch = raw.match(/REASON:\s*(.+)/i);
+
+    const rowEl = document.getElementById(`row-${dayIdx}-${mealIdx}-${itemIdx}`);
+    if (swapMatch) {
+      const swapFood = swapMatch[1].trim();
+      const swapP = parseInt(swapMatch[2]);
+      const swapK = parseInt(swapMatch[3]);
+      const reason = reasonMatch ? reasonMatch[1].trim() : '';
+
+      // Insert swap suggestion below the row
+      const existing = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
+      if (existing) existing.remove();
+      const div = document.createElement('div');
+      div.className = 'swap-result';
+      div.id = `swap-${dayIdx}-${mealIdx}-${itemIdx}`;
+      div.innerHTML = `⇄ <strong>${swapFood}</strong> — ${swapP}g protein · ${swapK} kcal${reason ? `<br><span style="color:#555;font-size:11px">${reason}</span>` : ''}
+        <button onclick="applySwap(${dayIdx},${mealIdx},${itemIdx},'${swapFood.replace(/'/g,"\\'")}',${swapP},${swapK})" style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #2d6a4f;background:#2d6a4f;color:white;cursor:pointer;">Apply</button>
+        <button onclick="document.getElementById('swap-${dayIdx}-${mealIdx}-${itemIdx}').remove()" style="margin-left:4px;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #aaa;background:white;color:#555;cursor:pointer;">Dismiss</button>`;
+      rowEl.insertAdjacentElement('afterend', div);
+    } else {
+      alert('Could not parse swap suggestion. Try again.');
+    }
+  } catch(err) {
+    alert('Swap failed: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '⇄ Swap';
+}
+
+function applySwap(dayIdx, mealIdx, itemIdx, food, protein, calories) {
+  generatedPlan[dayIdx].meals[mealIdx].items[itemIdx] = { food, protein, calories };
+  renderDay(dayIdx);
 }
 </script>
 </body>
