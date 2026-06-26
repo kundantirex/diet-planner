@@ -204,15 +204,29 @@ function calcTargets(weight, height, age, gender, activity) {
   return { bmr: Math.round(bmr), tdee, targetCal, protein: Math.round(weight*proteinMult) };
 }
 
-async function callGroq(messages, maxTokens=2000) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-    body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, temperature: 0.7, messages })
-  });
-  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
-  const data = await res.json();
-  return data.choices[0].message.content;
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function callGroq(messages, maxTokens=2000, retries=3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, temperature: 0.7, messages })
+    });
+    if (res.status === 429) {
+      if (attempt < retries) {
+        const wait = attempt * 8000;
+        console.log(`Rate limited. Retrying in ${wait/1000}s...`);
+        await sleep(wait);
+        continue;
+      }
+      throw new Error('Rate limit hit. Please wait 30 seconds and try again.');
+    }
+    if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+  throw new Error('Max retries exceeded.');
 }
 
 function buildDietaryRestrictions() {
@@ -284,7 +298,7 @@ async function generatePlan() {
   document.getElementById('plan-title').innerHTML = '7-Day Meal Plan ' + dietBadge + diseaseBadges + '<span class="ai-badge">✨ AI Generated</span>';
 
   document.getElementById('day-tabs').innerHTML = '';
-  document.getElementById('meal-plan').innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Generating your personalized plan...<br><small style="color:#888">Tailoring for your health conditions — takes ~15 seconds</small></div>`;
+  document.getElementById('meal-plan').innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Generating days 1–4...<br><small style="color:#888">Split into 2 requests to stay within API limits</small></div>`;
 
   try {
     const goalLabel = selectedGoal==='muscle'?'Muscle Gain':selectedGoal==='loss'?'Weight Loss':'Maintenance';
@@ -292,57 +306,36 @@ async function generatePlan() {
     const restrictions = buildDietaryRestrictions();
     const hasConditions = restrictions.length > 0 || otherConditions;
 
-    const prompt = `You are an expert Indian clinical dietitian. Create a personalized 7-day Indian meal plan.
-
-CLIENT PROFILE:
+    const clientBlock = `CLIENT PROFILE:
 - Age: ${age} years, Gender: ${gender}
 - Weight: ${weight}kg, Height: ${height}cm
 - Goal: ${goalLabel}
 - Diet: ${dietLabel}
 - Daily calorie target: ${targets.targetCal} kcal
 - Daily protein target: ${targets.protein}g
-${hasConditions ? `
-MEDICAL CONDITIONS & DIETARY RESTRICTIONS (STRICTLY FOLLOW THESE):
-${restrictions.map(r=>'- '+r).join('\n')}
-${otherConditions ? `- OTHER: ${otherConditions}` : ''}
-` : ''}
-GENERAL RULES (always apply):
-- Use realistic Indian foods only
-- Never combine milk and curd in the same meal
-- Max 5 almonds per serving
-- Max 50g paneer per serving
-- 5 meals per day: Breakfast, Mid-Morning, Lunch, Evening Snack, Dinner
-- Each meal item must have realistic protein(g) and calories(kcal)
-- Vary meals across all 7 days — no two days identical
-- Keep portions realistic
-- Prefer low-oil, healthy cooking methods
+${hasConditions ? `MEDICAL CONDITIONS (STRICTLY FOLLOW):\n${restrictions.map(r=>'- '+r).join('\n')}${otherConditions?'\n- OTHER: '+otherConditions:''}` : ''}
+RULES: Indian foods only, no milk+curd same meal, max 5 almonds, max 50g paneer, 5 meals/day (Breakfast/Mid-Morning/Lunch/Evening Snack/Dinner), realistic portions, low-oil cooking.`;
 
-Return ONLY a valid JSON array, no explanation, no markdown:
-[
-  {
-    "day": "Monday",
-    "meals": [
-      {
-        "name": "Breakfast",
-        "color": "#fff8e1",
-        "headerColor": "#f57f17",
-        "items": [
-          {"food": "3 boiled eggs", "protein": 18, "calories": 210}
-        ]
-      },
-      {"name": "Mid-Morning", "color": "#fce4ec", "headerColor": "#c62828", "items": [...]},
-      {"name": "Lunch", "color": "#e8f5e9", "headerColor": "#2e7d32", "items": [...]},
-      {"name": "Evening Snack", "color": "#e3f2fd", "headerColor": "#1565c0", "items": [...]},
-      {"name": "Dinner", "color": "#ede7f6", "headerColor": "#6a1b9a", "items": [...]}
-    ]
-  }
-]
-Generate all 7 days. Return only the JSON array.`;
+    const jsonFormat = `Return ONLY a valid JSON array. Each day: {"day":"...","meals":[{"name":"Breakfast","color":"#fff8e1","headerColor":"#f57f17","items":[{"food":"...","protein":0,"calories":0}]},{"name":"Mid-Morning","color":"#fce4ec","headerColor":"#c62828","items":[...]},{"name":"Lunch","color":"#e8f5e9","headerColor":"#2e7d32","items":[...]},{"name":"Evening Snack","color":"#e3f2fd","headerColor":"#1565c0","items":[...]},{"name":"Dinner","color":"#ede7f6","headerColor":"#6a1b9a","items":[...]}]}`;
 
-    const raw = await callGroq([{role:'user', content: prompt}], 4000);
-    const match = raw.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('Could not parse meal plan from AI response');
-    generatedPlan = JSON.parse(match[0]);
+    // Call 1: Monday to Thursday
+    const prompt1 = `You are an expert Indian clinical dietitian.\n${clientBlock}\n\nGenerate meal plans for Monday, Tuesday, Wednesday, Thursday only.\n${jsonFormat}\nReturn only the JSON array for 4 days.`;
+    const raw1 = await callGroq([{role:'user', content: prompt1}], 3000);
+    const match1 = raw1.match(/\[[\s\S]*\]/);
+    if (!match1) throw new Error('Could not parse days 1-4');
+    const part1 = JSON.parse(match1[0]);
+
+    document.getElementById('meal-plan').innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Generating days 5–7...<br><small style="color:#888">Almost done</small></div>`;
+    await sleep(2000); // brief pause between calls
+
+    // Call 2: Friday to Sunday
+    const prompt2 = `You are an expert Indian clinical dietitian.\n${clientBlock}\n\nGenerate meal plans for Friday, Saturday, Sunday only. Make them different from a typical Mon-Thu plan.\n${jsonFormat}\nReturn only the JSON array for 3 days.`;
+    const raw2 = await callGroq([{role:'user', content: prompt2}], 2500);
+    const match2 = raw2.match(/\[[\s\S]*\]/);
+    if (!match2) throw new Error('Could not parse days 5-7');
+    const part2 = JSON.parse(match2[0]);
+
+    generatedPlan = [...part1, ...part2];
 
     currentDay = 0;
     const tabs = document.getElementById('day-tabs');
