@@ -47,7 +47,16 @@ textarea { resize: vertical; min-height: 70px; }
 .swap-btn { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid #2d6a4f; color: #2d6a4f; background: white; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .swap-btn:hover { background: #d8f3dc; }
 .swap-btn:disabled { border-color: #aaa; color: #aaa; cursor: not-allowed; }
-.swap-result { font-size: 12px; color: #1b4332; background: #d8f3dc; border-radius: 6px; padding: 6px 10px; margin: 0 12px 6px; border-left: 3px solid #2d6a4f; }
+.swap-result { font-size: 12px; color: #333; background: #f8fdf9; border-radius: 8px; padding: 8px 12px; margin: 0 12px 8px; border: 1px solid #b7e4c7; }
+.swap-result .swap-title { font-weight: 600; color: #1b4332; margin-bottom: 6px; font-size: 12px; }
+.swap-option { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e8f5e9; }
+.swap-option:last-child { border-bottom: none; }
+.swap-option-info { flex: 1; }
+.swap-option-name { font-weight: 500; color: #1b4332; font-size: 13px; }
+.swap-option-macro { font-size: 11px; color: #666; }
+.swap-option-reason { font-size: 11px; color: #555; font-style: italic; }
+.apply-btn { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid #2d6a4f; background: #2d6a4f; color: white; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+.dismiss-btn { font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid #aaa; background: white; color: #555; cursor: pointer; }
 .day-total { display: flex; justify-content: center; gap: 2rem; padding: .9rem; background: #f8faf8; border-radius: 10px; border: 1px solid #d0eada; margin-top: .5rem; }
 .day-total span { font-size: 14px; font-weight: 600; color: #1b4332; }
 .day-total small { font-size: 12px; color: #666; font-weight: 400; }
@@ -395,48 +404,75 @@ async function swapItem(dayIdx, mealIdx, itemIdx, btn) {
   btn.textContent = '...';
 
   const diseases = [...selectedDiseases];
-  const conditionNote = diseases.length > 0 ? `Client has: ${diseases.join(', ')}. Swap must be safe for these conditions.` : '';
+  const conditionNote = diseases.length > 0 ? `Client conditions: ${diseases.join(', ')}. ALL swaps must be safe for these.` : '';
+  const dietRule = clientStats.diet === 'veg'
+    ? 'STRICTLY Vegetarian — absolutely NO chicken, fish, mutton, prawns, or any meat. Eggs are allowed.'
+    : 'Non-Vegetarian (chicken, fish, eggs, mutton all allowed).';
+
+  const rowEl = document.getElementById(`row-${dayIdx}-${mealIdx}-${itemIdx}`);
+  const existing = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
+  if (existing) existing.remove();
+
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'swap-result';
+  loadingDiv.id = `swap-${dayIdx}-${mealIdx}-${itemIdx}`;
+  loadingDiv.innerHTML = `<span style="color:#888;font-size:12px">⏳ Finding 3 alternatives...</span>`;
+  rowEl.insertAdjacentElement('afterend', loadingDiv);
 
   try {
-    const prompt = `You are an Indian clinical dietitian. Suggest ONE food swap.
+    const prompt = `You are an Indian clinical dietitian. Suggest exactly 3 different food swap alternatives.
 
-Current item: "${item.food}" (${item.protein}g protein, ${item.calories} kcal) in ${mealName}
-Client diet: ${clientStats.diet === 'veg' ? 'Vegetarian' : 'Non-Vegetarian'}
-Client goal: ${clientStats.goal}
+Current item: "${item.food}" (${item.protein}g protein, ${item.calories} kcal) — meal: ${mealName}
+Diet: ${dietRule}
+Goal: ${clientStats.goal}
 ${conditionNote}
 
-Rules: common Indian food, similar or better protein, fits meal time, no milk+curd together, max 50g paneer, max 5 almonds, safe for client conditions.
+Rules for ALL 3 options:
+- Common Indian food only
+- Similar or better protein
+- Fits ${mealName} meal time
+- No milk and curd in the same option
+- Max 50g paneer per serving
+- Max 5 almonds per serving
+- All 3 must be different from each other and from the original food
+- Safe for any mentioned health conditions
 
-Reply in this exact format only:
-SWAP: [food name and quantity] | [protein]g protein | [calories] kcal
-REASON: [one short sentence]`;
+Reply in this EXACT format, nothing else:
+SWAP1: [food and quantity] | [protein]g | [calories] kcal | [one short reason]
+SWAP2: [food and quantity] | [protein]g | [calories] kcal | [one short reason]
+SWAP3: [food and quantity] | [protein]g | [calories] kcal | [one short reason]`;
 
-    const raw = await callGroq([{role:'user', content: prompt}], 200);
-    const swapMatch = raw.match(/SWAP:\s*(.+?)\s*\|\s*(\d+)g protein\s*\|\s*(\d+)\s*kcal/i);
-    const reasonMatch = raw.match(/REASON:\s*(.+)/i);
+    const raw = await callGroq([{role:'user', content: prompt}], 500);
 
-    const rowEl = document.getElementById(`row-${dayIdx}-${mealIdx}-${itemIdx}`);
-    const existing = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
-    if (existing) existing.remove();
+    const swapRegex = /SWAP\d:\s*(.+?)\s*\|\s*(\d+)g\s*\|\s*(\d+)\s*kcal\s*\|\s*(.+)/gi;
+    const options = [];
+    let m;
+    while ((m = swapRegex.exec(raw)) !== null) {
+      options.push({ food: m[1].trim(), protein: parseInt(m[2]), calories: parseInt(m[3]), reason: m[4].trim() });
+    }
 
-    if (swapMatch) {
-      const swapFood = swapMatch[1].trim();
-      const swapP = parseInt(swapMatch[2]);
-      const swapK = parseInt(swapMatch[3]);
-      const reason = reasonMatch ? reasonMatch[1].trim() : '';
-      const div = document.createElement('div');
-      div.className = 'swap-result';
-      div.id = `swap-${dayIdx}-${mealIdx}-${itemIdx}`;
-      div.innerHTML = `⇄ <strong>${swapFood}</strong> — ${swapP}g protein · ${swapK} kcal
-        ${reason ? `<br><span style="color:#555;font-size:11px">${reason}</span>` : ''}
-        <button onclick="applySwap(${dayIdx},${mealIdx},${itemIdx},'${swapFood.replace(/'/g,"\\'")}',${swapP},${swapK})" style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #2d6a4f;background:#2d6a4f;color:white;cursor:pointer;">Apply</button>
-        <button onclick="document.getElementById('swap-${dayIdx}-${mealIdx}-${itemIdx}').remove()" style="margin-left:4px;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #aaa;background:white;color:#555;cursor:pointer;">Dismiss</button>`;
-      rowEl.insertAdjacentElement('afterend', div);
+    const swapDiv = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
+    if (options.length === 0) {
+      swapDiv.innerHTML = `<span style="color:#b5451b;font-size:12px">Could not parse options. Try again.</span>`;
     } else {
-      alert('Could not parse swap. Try again.');
+      let html = `<div class="swap-title">⇄ Swap options for "${item.food}"</div>`;
+      options.forEach((opt, i) => {
+        const safeFood = opt.food.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        html += `<div class="swap-option">
+          <div class="swap-option-info">
+            <div class="swap-option-name">${i+1}. ${opt.food}</div>
+            <div class="swap-option-macro">${opt.protein}g protein · ${opt.calories} kcal</div>
+            <div class="swap-option-reason">${opt.reason}</div>
+          </div>
+          <button class="apply-btn" onclick="applySwap(${dayIdx},${mealIdx},${itemIdx},'${safeFood}',${opt.protein},${opt.calories})">Apply</button>
+        </div>`;
+      });
+      html += `<div style="margin-top:6px;text-align:right"><button class="dismiss-btn" onclick="document.getElementById('swap-${dayIdx}-${mealIdx}-${itemIdx}').remove()">Dismiss</button></div>`;
+      swapDiv.innerHTML = html;
     }
   } catch(err) {
-    alert('Swap failed: ' + err.message);
+    const swapDiv = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
+    if (swapDiv) swapDiv.innerHTML = `<span style="color:#b5451b;font-size:12px">Failed: ${err.message}. Try again.</span>`;
   }
   btn.disabled = false;
   btn.textContent = '⇄ Swap';
