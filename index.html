@@ -15,12 +15,16 @@ header p { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
 .card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #2d6a4f; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
-input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-.toggle-row { display: flex; gap: 10px; margin-top: 4px; }
-.toggle-btn { flex: 1; padding: 10px; border: 1.5px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 13px; font-weight: 500; color: #444; transition: all .15s; }
+input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; }
+textarea { resize: vertical; min-height: 70px; }
+.toggle-row { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+.toggle-btn { flex: 1; min-width: 100px; padding: 10px; border: 1.5px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 13px; font-weight: 500; color: #444; transition: all .15s; }
 .toggle-btn.active-veg { border-color: #2d6a4f; background: #d8f3dc; color: #2d6a4f; }
 .toggle-btn.active-nonveg { border-color: #b5451b; background: #fde8e0; color: #b5451b; }
 .toggle-btn.active-goal { border-color: #2d6a4f; background: #d8f3dc; color: #2d6a4f; }
+.disease-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.disease-chip { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd; background: white; cursor: pointer; font-size: 13px; color: #555; transition: all .15s; user-select: none; }
+.disease-chip.selected { border-color: #c62828; background: #fde8e0; color: #c62828; font-weight: 500; }
 .btn-calc { width: 100%; padding: 12px; background: #2d6a4f; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 1rem; }
 .btn-calc:hover { background: #1b4332; }
 .btn-calc:disabled { background: #888; cursor: not-allowed; }
@@ -28,6 +32,8 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 .target-box { text-align: center; padding: 1rem; border-radius: 10px; background: #f0faf4; border: 1px solid #b7e4c7; }
 .target-box .val { font-size: 1.6rem; font-weight: 700; color: #1b4332; }
 .target-box .lbl { font-size: 12px; color: #555; margin-top: 2px; }
+.health-notes { background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: 13px; color: #5d4037; }
+.health-notes strong { color: #e65100; }
 .day-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.2rem; }
 .day-tab { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd; background: white; cursor: pointer; font-size: 13px; font-weight: 500; color: #555; transition: all .15s; }
 .day-tab.active { background: #2d6a4f; color: white; border-color: #2d6a4f; }
@@ -41,7 +47,7 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 .swap-btn { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid #2d6a4f; color: #2d6a4f; background: white; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .swap-btn:hover { background: #d8f3dc; }
 .swap-btn:disabled { border-color: #aaa; color: #aaa; cursor: not-allowed; }
-.swap-result { font-size: 12px; color: #1b4332; background: #d8f3dc; border-radius: 6px; padding: 4px 10px; margin: 0 12px 6px; border-left: 3px solid #2d6a4f; }
+.swap-result { font-size: 12px; color: #1b4332; background: #d8f3dc; border-radius: 6px; padding: 6px 10px; margin: 0 12px 6px; border-left: 3px solid #2d6a4f; }
 .day-total { display: flex; justify-content: center; gap: 2rem; padding: .9rem; background: #f8faf8; border-radius: 10px; border: 1px solid #d0eada; margin-top: .5rem; }
 .day-total span { font-size: 14px; font-weight: 600; color: #1b4332; }
 .day-total small { font-size: 12px; color: #666; font-weight: 400; }
@@ -49,17 +55,20 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
 .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-left: 6px; vertical-align: middle; }
 .badge-veg { background: #d8f3dc; color: #2d6a4f; }
 .badge-nonveg { background: #fde8e0; color: #b5451b; }
+.badge-disease { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
 .loading-box { text-align: center; padding: 2rem; color: #555; }
 .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #d8f3dc; border-top-color: #2d6a4f; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .ai-badge { display: inline-block; font-size: 11px; background: #e8f4fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 20px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
 .error-box { background: #fde8e0; border: 1px solid #f5c6b0; border-radius: 8px; padding: 1rem; color: #b5451b; font-size: 14px; margin-top: 1rem; }
+.section-label { font-size: 13px; font-weight: 600; color: #2d6a4f; margin-bottom: 8px; margin-top: 1rem; }
+.disclaimer { font-size: 12px; color: #888; margin-top: 6px; font-style: italic; }
 </style>
 </head>
 <body>
 <header>
   <h1>Indian Diet Planner <span style="font-size:13px;opacity:0.8;font-weight:400">powered by Groq AI</span></h1>
-  <p>AI-generated personalized 7-day Indian meal plans with smart swap suggestions</p>
+  <p>AI-generated personalized 7-day Indian meal plans — tailored to your health conditions</p>
 </header>
 <div class="container">
   <div class="card">
@@ -85,7 +94,6 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
         <button class="toggle-btn active-veg" onclick="setDiet(this,'veg')">🥦 Vegetarian</button>
         <button class="toggle-btn" onclick="setDiet(this,'nonveg')">🍗 Non-Vegetarian</button>
       </div>
-      <input type="hidden" id="diet" value="veg">
     </div>
     <div style="margin-top:1rem">
       <label>Goal</label>
@@ -94,8 +102,32 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
         <button class="toggle-btn" onclick="setGoal(this,'loss')">🔥 Weight Loss</button>
         <button class="toggle-btn" onclick="setGoal(this,'maintain')">⚖️ Maintain</button>
       </div>
-      <input type="hidden" id="goal" value="muscle">
     </div>
+
+    <!-- HEALTH CONDITIONS -->
+    <div style="margin-top:1.2rem">
+      <div class="section-label">Health Conditions (select all that apply)</div>
+      <div class="disease-grid" id="disease-grid">
+        <span class="disease-chip" onclick="toggleDisease(this,'Diabetes (Type 2)')">🩸 Diabetes</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'High Blood Pressure (Hypertension)')">❤️ High BP</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Low Blood Pressure (Hypotension)')">💙 Low BP</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Anemia (Iron Deficiency)')">🔴 Anemia</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'High Cholesterol')">🧈 High Cholesterol</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Thyroid (Hypothyroidism)')">🦋 Thyroid</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'PCOD / PCOS')">🌸 PCOD/PCOS</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Kidney Disease')">🫘 Kidney Disease</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Fatty Liver')">🟡 Fatty Liver</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Lactose Intolerance')">🥛 Lactose Intolerant</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Gluten Intolerance / Celiac')">🌾 Gluten Intolerant</span>
+        <span class="disease-chip" onclick="toggleDisease(this,'Gout / High Uric Acid')">🦵 Gout/Uric Acid</span>
+      </div>
+      <div style="margin-top:10px">
+        <label>Other conditions or food allergies (optional)</label>
+        <textarea id="other-conditions" placeholder="e.g. Gastric issues, lactose intolerant, allergic to peanuts..."></textarea>
+      </div>
+      <p class="disclaimer">⚠️ This plan is for general guidance only. Always consult your doctor before making dietary changes for medical conditions.</p>
+    </div>
+
     <button class="btn-calc" id="gen-btn" onclick="generatePlan()">✨ Generate AI Diet Plan</button>
   </div>
 
@@ -107,6 +139,7 @@ input, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-r
         <div class="target-box"><div class="val" id="t-protein">--</div><div class="lbl">g protein / day</div></div>
         <div class="target-box"><div class="val" id="t-bmr">--</div><div class="lbl">BMR (kcal)</div></div>
       </div>
+      <div id="health-notes-box"></div>
     </div>
     <div class="card">
       <h2 id="plan-title">7-Day Meal Plan</h2>
@@ -123,6 +156,7 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 
 let selectedGoal = 'muscle';
 let selectedDiet = 'veg';
+let selectedDiseases = new Set();
 let currentDay = 0;
 let generatedPlan = [];
 let clientStats = {};
@@ -137,6 +171,15 @@ function setGoal(btn, val) {
   btn.classList.add('active-goal');
   selectedGoal = val;
 }
+function toggleDisease(el, name) {
+  if (selectedDiseases.has(name)) {
+    selectedDiseases.delete(name);
+    el.classList.remove('selected');
+  } else {
+    selectedDiseases.add(name);
+    el.classList.add('selected');
+  }
+}
 
 function calcTargets(weight, height, age, gender, activity) {
   let bmr = gender === 'male'
@@ -147,26 +190,57 @@ function calcTargets(weight, height, age, gender, activity) {
   let proteinMult = 1.8;
   if (selectedGoal==='muscle'){targetCal=tdee+300;proteinMult=2.0;}
   if (selectedGoal==='loss'){targetCal=tdee-500;proteinMult=2.2;}
+  // Adjust for kidney disease - lower protein
+  if (selectedDiseases.has('Kidney Disease')) proteinMult = 0.8;
   return { bmr: Math.round(bmr), tdee, targetCal, protein: Math.round(weight*proteinMult) };
 }
 
 async function callGroq(messages, maxTokens=2000) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-      messages
-    })
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+    body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, temperature: 0.7, messages })
   });
   if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
   const data = await res.json();
   return data.choices[0].message.content;
+}
+
+function buildDietaryRestrictions() {
+  const rules = [];
+  if (selectedDiseases.has('Diabetes (Type 2)')) rules.push('DIABETES: avoid refined sugar, white rice, maida, fruit juices; prefer low GI foods like brown rice, oats, whole wheat, bitter gourd, fenugreek; control carb portions; include cinnamon');
+  if (selectedDiseases.has('High Blood Pressure (Hypertension)')) rules.push('HIGH BP: strictly low sodium — no added salt, no pickles, no papad, no processed foods; include potassium-rich foods like banana, spinach, dal; avoid caffeine');
+  if (selectedDiseases.has('Low Blood Pressure (Hypotension)')) rules.push('LOW BP: slightly higher sodium intake is okay; include small frequent meals; adequate fluid intake; include beetroot, dates, raisins, pomegranate');
+  if (selectedDiseases.has('Anemia (Iron Deficiency)')) rules.push('ANEMIA: iron-rich foods — spinach, methi, beetroot, dates, ragi, sesame seeds, pomegranate, jaggery; pair iron foods with vitamin C (lemon, amla); avoid tea/coffee with meals');
+  if (selectedDiseases.has('High Cholesterol')) rules.push('HIGH CHOLESTEROL: avoid egg yolks, full-fat dairy, ghee in excess, fried foods; include oats, flaxseeds, garlic, fenugreek seeds, olive oil; prefer steamed/grilled cooking');
+  if (selectedDiseases.has('Thyroid (Hypothyroidism)')) rules.push('THYROID: avoid raw cruciferous vegetables (cabbage, cauliflower, broccoli) in large amounts — cook them; include selenium-rich foods like brazil nuts, sunflower seeds; avoid soy in excess; include iodized salt');
+  if (selectedDiseases.has('PCOD / PCOS')) rules.push('PCOD/PCOS: low GI diet, anti-inflammatory foods; avoid sugar and processed carbs; include flaxseeds, cinnamon, spearmint tea; high fiber; avoid dairy excess');
+  if (selectedDiseases.has('Kidney Disease')) rules.push('KIDNEY DISEASE: strictly low protein (max 0.8g/kg), low potassium (avoid banana, tomato, potato in excess), low phosphorus (avoid dairy, nuts, whole grains in excess), low sodium; prefer white rice over brown, avoid dark colas');
+  if (selectedDiseases.has('Fatty Liver')) rules.push('FATTY LIVER: avoid fried foods, alcohol, refined carbs, red meat; include garlic, green tea, broccoli, walnuts, olive oil, oats; low fat cooking methods');
+  if (selectedDiseases.has('Lactose Intolerance')) rules.push('LACTOSE INTOLERANT: no milk, no paneer, no curd, no cream — use plant-based alternatives like soy milk, almond milk; calcium from ragi, sesame, green leafy vegetables');
+  if (selectedDiseases.has('Gluten Intolerance / Celiac')) rules.push('GLUTEN INTOLERANT: strictly no wheat (no roti, no maida, no bread) — use rice, jowar roti, bajra roti, ragi roti, rice flour; check all packaged foods for hidden gluten');
+  if (selectedDiseases.has('Gout / High Uric Acid')) rules.push('GOUT/HIGH URIC ACID: avoid red meat, organ meats, shellfish, alcohol, high fructose foods; limit dal and legumes to 1 serving/day; include cherries, low-fat dairy, vitamin C foods; drink plenty of water');
+  return rules;
+}
+
+function buildHealthNotes() {
+  if (selectedDiseases.size === 0) return '';
+  const notes = {
+    'Diabetes (Type 2)': 'Low GI foods, controlled carbs, no refined sugar',
+    'High Blood Pressure (Hypertension)': 'Low sodium, potassium-rich foods, no pickles/papad',
+    'Low Blood Pressure (Hypotension)': 'Small frequent meals, beetroot, dates, adequate fluids',
+    'Anemia (Iron Deficiency)': 'Iron-rich foods with vitamin C, avoid tea with meals',
+    'High Cholesterol': 'No fried foods, oats, flaxseeds, steamed/grilled cooking',
+    'Thyroid (Hypothyroidism)': 'Cooked cruciferous veg only, selenium-rich foods',
+    'PCOD / PCOS': 'Low GI, anti-inflammatory, high fiber, flaxseeds',
+    'Kidney Disease': 'Low protein, low potassium, low phosphorus, low sodium',
+    'Fatty Liver': 'No fried/processed foods, garlic, oats, olive oil',
+    'Lactose Intolerance': 'No dairy — use ragi/sesame for calcium',
+    'Gluten Intolerance / Celiac': 'No wheat — use jowar, bajra, ragi rotis',
+    'Gout / High Uric Acid': 'No red meat, limited dal, plenty of water'
+  };
+  const items = [...selectedDiseases].map(d => `<li><strong>${d.split('(')[0].trim()}:</strong> ${notes[d]||''}</li>`).join('');
+  return `<div class="health-notes">⚕️ <strong>Plan adjusted for your conditions:</strong><ul style="margin-top:6px;padding-left:1.2rem;line-height:1.8">${items}</ul></div>`;
 }
 
 async function generatePlan() {
@@ -175,15 +249,17 @@ async function generatePlan() {
   const height = +document.getElementById('height').value;
   const gender = document.getElementById('gender').value;
   const activity = +document.getElementById('activity').value;
+  const otherConditions = document.getElementById('other-conditions').value.trim();
 
   if (!age || !weight || !height) { alert('Please fill all fields.'); return; }
 
   const targets = calcTargets(weight, height, age, gender, activity);
-  clientStats = { age, weight, height, gender, activity, diet: selectedDiet, goal: selectedGoal, ...targets };
+  clientStats = { age, weight, height, gender, activity, diet: selectedDiet, goal: selectedGoal, diseases: [...selectedDiseases], ...targets };
 
   document.getElementById('t-cal').textContent = targets.targetCal;
   document.getElementById('t-protein').textContent = targets.protein + 'g';
   document.getElementById('t-bmr').textContent = targets.bmr;
+  document.getElementById('health-notes-box').innerHTML = buildHealthNotes();
 
   const btn = document.getElementById('gen-btn');
   btn.disabled = true;
@@ -192,19 +268,22 @@ async function generatePlan() {
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({behavior:'smooth'});
 
-  const badge = selectedDiet==='veg'
+  const dietBadge = selectedDiet==='veg'
     ? '<span class="badge badge-veg">Vegetarian</span>'
     : '<span class="badge badge-nonveg">Non-Veg</span>';
-  document.getElementById('plan-title').innerHTML = '7-Day Meal Plan ' + badge + '<span class="ai-badge">✨ AI Generated</span>';
+  const diseaseBadges = [...selectedDiseases].map(d => `<span class="badge badge-disease">${d.split('(')[0].trim()}</span>`).join(' ');
+  document.getElementById('plan-title').innerHTML = '7-Day Meal Plan ' + dietBadge + diseaseBadges + '<span class="ai-badge">✨ AI Generated</span>';
 
   document.getElementById('day-tabs').innerHTML = '';
-  document.getElementById('meal-plan').innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Generating your personalized 7-day plan...<br><small style="color:#888">This takes about 10-15 seconds</small></div>`;
+  document.getElementById('meal-plan').innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Generating your personalized plan...<br><small style="color:#888">Tailoring for your health conditions — takes ~15 seconds</small></div>`;
 
   try {
     const goalLabel = selectedGoal==='muscle'?'Muscle Gain':selectedGoal==='loss'?'Weight Loss':'Maintenance';
-    const dietLabel = selectedDiet==='veg'?'Vegetarian (no meat/fish, eggs allowed)':'Non-Vegetarian (includes chicken, fish, eggs)';
+    const dietLabel = selectedDiet==='veg'?'Vegetarian (no meat/fish, eggs allowed)':'Non-Vegetarian (includes chicken, fish, eggs, mutton)';
+    const restrictions = buildDietaryRestrictions();
+    const hasConditions = restrictions.length > 0 || otherConditions;
 
-    const prompt = `You are an expert Indian diet planner. Create a personalized 7-day Indian meal plan.
+    const prompt = `You are an expert Indian clinical dietitian. Create a personalized 7-day Indian meal plan.
 
 CLIENT PROFILE:
 - Age: ${age} years, Gender: ${gender}
@@ -213,17 +292,23 @@ CLIENT PROFILE:
 - Diet: ${dietLabel}
 - Daily calorie target: ${targets.targetCal} kcal
 - Daily protein target: ${targets.protein}g
-
-RULES:
-- Use realistic Indian foods only (rotis, dal, sabji, rice, paneer max 50g per serving, eggs, chicken, fish etc.)
+${hasConditions ? `
+MEDICAL CONDITIONS & DIETARY RESTRICTIONS (STRICTLY FOLLOW THESE):
+${restrictions.map(r=>'- '+r).join('\n')}
+${otherConditions ? `- OTHER: ${otherConditions}` : ''}
+` : ''}
+GENERAL RULES (always apply):
+- Use realistic Indian foods only
 - Never combine milk and curd in the same meal
 - Max 5 almonds per serving
+- Max 50g paneer per serving
 - 5 meals per day: Breakfast, Mid-Morning, Lunch, Evening Snack, Dinner
 - Each meal item must have realistic protein(g) and calories(kcal)
-- Vary the meals across 7 days — no repetition of exact same day
-- Keep portions realistic and healthy
+- Vary meals across all 7 days — no two days identical
+- Keep portions realistic
+- Prefer low-oil, healthy cooking methods
 
-Return ONLY a valid JSON array with this exact structure, no explanation:
+Return ONLY a valid JSON array, no explanation, no markdown:
 [
   {
     "day": "Monday",
@@ -233,44 +318,20 @@ Return ONLY a valid JSON array with this exact structure, no explanation:
         "color": "#fff8e1",
         "headerColor": "#f57f17",
         "items": [
-          {"food": "3 boiled eggs", "protein": 18, "calories": 210},
-          {"food": "2 besan chillas", "protein": 10, "calories": 240}
+          {"food": "3 boiled eggs", "protein": 18, "calories": 210}
         ]
       },
-      {
-        "name": "Mid-Morning",
-        "color": "#fce4ec",
-        "headerColor": "#c62828",
-        "items": [...]
-      },
-      {
-        "name": "Lunch",
-        "color": "#e8f5e9",
-        "headerColor": "#2e7d32",
-        "items": [...]
-      },
-      {
-        "name": "Evening Snack",
-        "color": "#e3f2fd",
-        "headerColor": "#1565c0",
-        "items": [...]
-      },
-      {
-        "name": "Dinner",
-        "color": "#ede7f6",
-        "headerColor": "#6a1b9a",
-        "items": [...]
-      }
+      {"name": "Mid-Morning", "color": "#fce4ec", "headerColor": "#c62828", "items": [...]},
+      {"name": "Lunch", "color": "#e8f5e9", "headerColor": "#2e7d32", "items": [...]},
+      {"name": "Evening Snack", "color": "#e3f2fd", "headerColor": "#1565c0", "items": [...]},
+      {"name": "Dinner", "color": "#ede7f6", "headerColor": "#6a1b9a", "items": [...]}
     ]
   }
 ]
-Generate all 7 days (Monday through Sunday). Return only the JSON array.`;
+Generate all 7 days. Return only the JSON array.`;
 
     const raw = await callGroq([{role:'user', content: prompt}], 4000);
-
-    // Parse JSON from response
-    let jsonStr = raw.trim();
-    const match = jsonStr.match(/\[[\s\S]*\]/);
+    const match = raw.match(/\[[\s\S]*\]/);
     if (!match) throw new Error('Could not parse meal plan from AI response');
     generatedPlan = JSON.parse(match[0]);
 
@@ -280,7 +341,7 @@ Generate all 7 days (Monday through Sunday). Return only the JSON array.`;
     renderDay(0);
 
   } catch(err) {
-    document.getElementById('meal-plan').innerHTML = `<div class="error-box">⚠️ Failed to generate plan: ${err.message}<br><br>Check your API key or try again.</div>`;
+    document.getElementById('meal-plan').innerHTML = `<div class="error-box">⚠️ Failed to generate plan: ${err.message}<br><br>Try again.</div>`;
   }
 
   btn.disabled = false;
@@ -301,20 +362,20 @@ function renderDay(idx) {
   let dayTotalP = 0, dayTotalK = 0;
 
   dayData.meals.forEach((meal, mi) => {
-    const tp = meal.items.reduce((s,i) => s + (i.protein||0), 0);
-    const tk = meal.items.reduce((s,i) => s + (i.calories||0), 0);
+    const tp = meal.items.reduce((s,i) => s+(i.protein||0), 0);
+    const tk = meal.items.reduce((s,i) => s+(i.calories||0), 0);
     dayTotalP += tp; dayTotalK += tk;
     html += `<div class="meal-section">
       <div class="meal-header" style="background:${meal.color};color:${meal.headerColor}">
         <span>${meal.name}</span>
         <span>${tp}g protein &middot; ${tk} kcal</span>
       </div>
-      <div class="meal-body" id="meal-body-${idx}-${mi}">
-        ${meal.items.map((item, ii) => `
+      <div class="meal-body">
+        ${meal.items.map((item,ii) => `
           <div class="meal-row" id="row-${idx}-${mi}-${ii}">
             <span class="food-name">${item.food}</span>
             <span class="macro">${item.protein}g &middot; ${item.calories} cal</span>
-            <button class="swap-btn" onclick="swapItem(${idx},${mi},${ii},this)" title="Suggest a swap">⇄ Swap</button>
+            <button class="swap-btn" onclick="swapItem(${idx},${mi},${ii},this)">⇄ Swap</button>
           </div>`).join('')}
       </div>
     </div>`;
@@ -333,48 +394,46 @@ async function swapItem(dayIdx, mealIdx, itemIdx, btn) {
   btn.disabled = true;
   btn.textContent = '...';
 
-  try {
-    const prompt = `You are an Indian diet expert. Suggest ONE alternative food swap.
+  const diseases = [...selectedDiseases];
+  const conditionNote = diseases.length > 0 ? `Client has: ${diseases.join(', ')}. Swap must be safe for these conditions.` : '';
 
-Current item: "${item.food}" (${item.protein}g protein, ${item.calories} kcal) — in ${mealName}
+  try {
+    const prompt = `You are an Indian clinical dietitian. Suggest ONE food swap.
+
+Current item: "${item.food}" (${item.protein}g protein, ${item.calories} kcal) in ${mealName}
 Client diet: ${clientStats.diet === 'veg' ? 'Vegetarian' : 'Non-Vegetarian'}
 Client goal: ${clientStats.goal}
+${conditionNote}
 
-Give ONE swap that:
-- Is a common Indian food
-- Has similar or better protein
-- Fits the meal time (${mealName})
-- Never combines milk and curd together
-- Max 50g paneer if paneer is suggested
+Rules: common Indian food, similar or better protein, fits meal time, no milk+curd together, max 50g paneer, max 5 almonds, safe for client conditions.
 
 Reply in this exact format only:
 SWAP: [food name and quantity] | [protein]g protein | [calories] kcal
-REASON: [one short sentence why]`;
+REASON: [one short sentence]`;
 
     const raw = await callGroq([{role:'user', content: prompt}], 200);
-
     const swapMatch = raw.match(/SWAP:\s*(.+?)\s*\|\s*(\d+)g protein\s*\|\s*(\d+)\s*kcal/i);
     const reasonMatch = raw.match(/REASON:\s*(.+)/i);
 
     const rowEl = document.getElementById(`row-${dayIdx}-${mealIdx}-${itemIdx}`);
+    const existing = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
+    if (existing) existing.remove();
+
     if (swapMatch) {
       const swapFood = swapMatch[1].trim();
       const swapP = parseInt(swapMatch[2]);
       const swapK = parseInt(swapMatch[3]);
       const reason = reasonMatch ? reasonMatch[1].trim() : '';
-
-      // Insert swap suggestion below the row
-      const existing = document.getElementById(`swap-${dayIdx}-${mealIdx}-${itemIdx}`);
-      if (existing) existing.remove();
       const div = document.createElement('div');
       div.className = 'swap-result';
       div.id = `swap-${dayIdx}-${mealIdx}-${itemIdx}`;
-      div.innerHTML = `⇄ <strong>${swapFood}</strong> — ${swapP}g protein · ${swapK} kcal${reason ? `<br><span style="color:#555;font-size:11px">${reason}</span>` : ''}
+      div.innerHTML = `⇄ <strong>${swapFood}</strong> — ${swapP}g protein · ${swapK} kcal
+        ${reason ? `<br><span style="color:#555;font-size:11px">${reason}</span>` : ''}
         <button onclick="applySwap(${dayIdx},${mealIdx},${itemIdx},'${swapFood.replace(/'/g,"\\'")}',${swapP},${swapK})" style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #2d6a4f;background:#2d6a4f;color:white;cursor:pointer;">Apply</button>
         <button onclick="document.getElementById('swap-${dayIdx}-${mealIdx}-${itemIdx}').remove()" style="margin-left:4px;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #aaa;background:white;color:#555;cursor:pointer;">Dismiss</button>`;
       rowEl.insertAdjacentElement('afterend', div);
     } else {
-      alert('Could not parse swap suggestion. Try again.');
+      alert('Could not parse swap. Try again.');
     }
   } catch(err) {
     alert('Swap failed: ' + err.message);
