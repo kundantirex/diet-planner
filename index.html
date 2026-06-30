@@ -76,7 +76,7 @@ textarea { resize: vertical; min-height: 70px; }
 </head>
 <body>
 <header>
-  <h1>Indian Diet Planner <span style="font-size:12px;opacity:0.8;font-weight:400">powered by KJ-Fitness</span></h1>
+  <h1>Indian Diet Planner <span style="font-size:13px;opacity:0.8;font-weight:400">powered by local AI (Ollama)</span></h1>
   <p>AI-generated personalized 7-day Indian meal plans — tailored to your health conditions</p>
 </header>
 <div class="container">
@@ -159,8 +159,8 @@ textarea { resize: vertical; min-height: 70px; }
 </div>
 
 <script>
-const GROQ_API_KEY = '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';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const OLLAMA_URL = 'http://127.0.0.1:11434/api/chat';
+const OLLAMA_MODEL = 'qwen2.5:7b-instruct';
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 let selectedGoal = 'muscle';
@@ -206,25 +206,29 @@ function calcTargets(weight, height, age, gender, activity) {
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function callGroq(messages, maxTokens=2000, retries=3) {
+async function callGroq(messages, maxTokens=2000, retries=2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, temperature: 0.7, messages })
-    });
-    if (res.status === 429) {
-      if (attempt < retries) {
-        const wait = attempt * 8000;
-        console.log(`Rate limited. Retrying in ${wait/1000}s...`);
-        await sleep(wait);
-        continue;
-      }
-      throw new Error('Rate limit hit. Please wait 30 seconds and try again.');
+    let res;
+    try {
+      res = await fetch(OLLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: OLLAMA_MODEL,
+          messages,
+          stream: false,
+          options: { temperature: 0.7, num_predict: maxTokens }
+        })
+      });
+    } catch (e) {
+      throw new Error('Could not reach Ollama at localhost:11434. Make sure "ollama serve" is running in a terminal on this computer.');
     }
-    if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+    if (!res.ok) {
+      if (attempt < retries) { await sleep(2000); continue; }
+      throw new Error(`Ollama error: ${res.status}`);
+    }
     const data = await res.json();
-    return data.choices[0].message.content;
+    return data.message.content;
   }
   throw new Error('Max retries exceeded.');
 }
