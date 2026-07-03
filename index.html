@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Indian Diet Planner</title>
+<title>KJ-FITNESS Diet Planner</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #222; }
@@ -76,7 +76,7 @@ textarea { resize: vertical; min-height: 70px; }
 </head>
 <body>
 <header>
-  <h1>Indian Diet Planner <span style="font-size:13px;opacity:0.8;font-weight:400">powered by local AI (Ollama)</span></h1>
+  <h1>KJ-FITNESS Diet Planner <span style="font-size:13px;opacity:0.8;font-weight:400">powered by Gemini AI</span></h1>
   <p>AI-generated personalized 7-day Indian meal plans — tailored to your health conditions</p>
 </header>
 <div class="container">
@@ -159,8 +159,8 @@ textarea { resize: vertical; min-height: 70px; }
 </div>
 
 <script>
-const OLLAMA_URL = 'http://127.0.0.1:11434/api/chat';
-const OLLAMA_MODEL = 'qwen3.5:35b';
+const GEMINI_API_KEY = 'AQ.Ab8RN6LSpHkZnSwPD85KzciMXa86FgDqrejXSOWuo6Dk-PMU8g';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 let selectedGoal = 'muscle';
@@ -206,29 +206,33 @@ function calcTargets(weight, height, age, gender, activity) {
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function callGroq(messages, maxTokens=2000, retries=2) {
+async function callGroq(messages, maxTokens=2000, retries=3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     let res;
     try {
-      res = await fetch(OLLAMA_URL, {
+      // Convert messages to Gemini format
+      const contents = messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+      res = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: OLLAMA_MODEL,
-          messages,
-          stream: false,
-          options: { temperature: 0.7, num_predict: maxTokens }
+          contents,
+          generationConfig: { temperature: 0.7, maxOutputTokens: maxTokens }
         })
       });
-    } catch (e) {
-      throw new Error('Could not reach Ollama at localhost:11434. Make sure "ollama serve" is running in a terminal on this computer.');
+    } catch(e) {
+      throw new Error('Network error: ' + e.message);
     }
-    if (!res.ok) {
-      if (attempt < retries) { await sleep(2000); continue; }
-      throw new Error(`Ollama error: ${res.status}`);
+    if (res.status === 429) {
+      if (attempt < retries) { await sleep(attempt * 5000); continue; }
+      throw new Error('Rate limit hit. Wait 30 seconds and try again.');
     }
+    if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
     const data = await res.json();
-    return data.message.content;
+    return data.candidates[0].content.parts[0].text;
   }
   throw new Error('Max retries exceeded.');
 }
