@@ -159,8 +159,8 @@ textarea { resize: vertical; min-height: 70px; }
 </div>
 
 <script>
-const GEMINI_API_KEY = 'AQ.Ab8RN6LSpHkZnSwPD85KzciMXa86FgDqrejXSOWuo6Dk-PMU8g';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const NVIDIA_API_KEY = "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";
+const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 let selectedGoal = 'muscle';
@@ -210,31 +210,41 @@ async function callGroq(messages, maxTokens=2000, retries=3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     let res;
     try {
-      // Convert messages to Gemini format
-      const contents = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
-      res = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      res = await fetch(NVIDIA_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${NVIDIA_API_KEY}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          contents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: maxTokens }
+          model: "z-ai/glm-5.2",
+          messages: messages,
+          temperature: 0.7,
+          max_tokens: maxTokens
         })
       });
     } catch(e) {
-      throw new Error('Network error: ' + e.message);
+      throw new Error("Network error: " + e.message);
     }
+
     if (res.status === 429) {
-      if (attempt < retries) { await sleep(attempt * 5000); continue; }
-      throw new Error('Rate limit hit. Wait 30 seconds and try again.');
+      if (attempt < retries) {
+        await sleep(attempt * 5000);
+        continue;
+      }
+      throw new Error("Rate limit exceeded.");
     }
-    if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+
     const data = await res.json();
-    return data.candidates[0].content.parts[0].text;
+    return data.choices[0].message.content;
   }
-  throw new Error('Max retries exceeded.');
+
+  throw new Error("Maximum retries exceeded.");
 }
 
 function buildDietaryRestrictions() {
